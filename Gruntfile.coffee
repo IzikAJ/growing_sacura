@@ -6,7 +6,7 @@ module.exports = (grunt) ->
       glob_to_multiple:
         expand: true
         flatten: true
-        src: ['js/*.coffee']
+        src: ['js/**/*.coffee']
         dest: 'public/js'
         ext: '.js'
 
@@ -15,7 +15,7 @@ module.exports = (grunt) ->
         files:
           [{
             expand: true
-            src: [ 'css/*.scss' ]
+            src: [ 'css/**/*.scss' ]
             dest: 'public'
             ext: '.css'
           }]
@@ -34,7 +34,7 @@ module.exports = (grunt) ->
       options:
         livereload: true
       sass:
-        files: 'css/**/*.sass'
+        files: ['css/**/*.sass', 'css/**/*.scss']
         tasks: ['sass']
       coffee:
         files: 'js/**/*.coffee'
