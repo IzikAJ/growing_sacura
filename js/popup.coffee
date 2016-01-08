@@ -1,12 +1,14 @@
 class PopupButton
-  radius: 5
+  radius: 2
   state: 0
-  renderContent: undefined
+  free: undefined
 
   # states:
   @DEFAULT: 0
   @HOVER:  1
   @ACTIVE: 2
+
+  LINE_LEN: 20
 
   constructor: (@root, a, b, c, d)->
     if Number.isFinite(a)
@@ -19,21 +21,52 @@ class PopupButton
   render: (g, data = {})->
     g.save()
     gradient = g.createLinearGradient(0, @rect.t + 10, 0, @rect.b - 10)
-
     if @isHover()
-      gradient.addColorStop(0,"#666")
-      gradient.addColorStop(1,"#999")
+      gradient.addColorStop(0,"#888")
+      gradient.addColorStop(1,"#EEE")
     else
-      gradient.addColorStop(0,"#999")
-      gradient.addColorStop(1,"#666")
+      gradient.addColorStop(0,"#EEE")
+      gradient.addColorStop(1,"#999")
 
     g.fillStyle = gradient
     # g.fillStyle = "#999"
     @root.roundRect(g, @rect.l, @rect.t, @rect.r, @rect.b, @radius)
+    if @isActive()
+      g.strokeStyle = "#040"
+      g.lineWidth = 2
+    else
+      g.strokeStyle = "#444"
+      g.lineWidth = 1
+    g.stroke()
     g.fill()
 
     g.restore()
-    @renderContent(g, data) if @renderContent
+    @renderContent(g, data)
+
+  renderContent: (g, data={})->
+    h = @rect.b - @rect.t
+    w = @rect.r - @rect.l
+    cx = @rect.l + w*0.5
+    cy = @rect.t + h*0.5
+    a = @LINE_LEN
+    c = a * Math.sin(Math.PI/3)
+    g.save()
+    g.strokeStyle = "#080"
+    g.lineWidth = 2
+    g.beginPath()
+    for pos, id in @free
+      dx = pos.x - @root.cell.x
+      dy = pos.y - @root.cell.y
+      ddx = (dx + dy) * 1.5 * a
+      ddy = (dy - dx) * c
+      g.moveTo(cx, cy)
+      g.lineTo(cx + ddx, cy + ddy)
+    g.stroke()
+    g.strokeStyle = "#800"
+    g.beginPath()
+    g.arc(cx, cy, 5, 0, 7)
+    g.closePath()
+    g.fill()
 
   setHover: (val=true)->
     @state = (@state | PopupButton.HOVER) ^ if val then PopupButton.DEFAULT else PopupButton.HOVER
@@ -63,11 +96,14 @@ class PopupButton
   onClick: (e)->
     if @isOnElement(e.offsetX, e.offsetY)
       @setActive(true)
+      @root.cell?.connectTo(@free)
+      @root.app.state = @root.app.GAME
+    else
+      @setActive(false)
 
 class GamePopup
   rect: undefined
-  radius: 10
-  btn_radius: 5
+  radius: 5
   buttons: undefined
 
   @GET_V = 1
@@ -77,7 +113,6 @@ class GamePopup
     @buttons = new Array()
     switch vers
       when @_.GET_V
-        console.log 'create GET_V version'
         @width=200
         @height=100+0
 
@@ -95,11 +130,11 @@ class GamePopup
 
   roundRect: (g, x1, y1, x2, y2, radius)->
     g.beginPath()
-    g.moveTo(x1, y1 + radius)
-    g.arcTo(x1, y1, x2, y1, radius)
-    g.arcTo(x2, y1, x2, y2, radius)
-    g.arcTo(x2, y2, x1, y2, radius)
-    g.arcTo(x1, y2, x1, y1, radius)
+    g.moveTo(x1, y1 + radius*2)
+    g.arcTo(x1, y1, x2, y1, radius*2)
+    g.arcTo(x2, y1, x2, y2, radius*2)
+    g.arcTo(x2, y2, x1, y2, radius*2)
+    g.arcTo(x1, y2, x1, y1, radius*2)
     g.closePath()
 
   renderPopupBG: (shadow)->

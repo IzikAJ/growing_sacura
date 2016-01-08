@@ -69,11 +69,7 @@
       }
       g.stroke();
       g.lineWidth = 1;
-      g.strokeStyle = "#000";
-      g.strokeText(this.x + "," + this.y, xx, yy);
-      if (this.data != null) {
-        return g.strokeText(this.data, xx, yy + 10);
-      }
+      return g.strokeStyle = "#000";
     };
 
     HexaCell.prototype.position = function(x, y) {

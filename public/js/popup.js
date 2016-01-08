@@ -2,17 +2,19 @@
   var GamePopup, PopupButton;
 
   PopupButton = (function() {
-    PopupButton.prototype.radius = 5;
+    PopupButton.prototype.radius = 2;
 
     PopupButton.prototype.state = 0;
 
-    PopupButton.prototype.renderContent = void 0;
+    PopupButton.prototype.free = void 0;
 
     PopupButton.DEFAULT = 0;
 
     PopupButton.HOVER = 1;
 
     PopupButton.ACTIVE = 2;
+
+    PopupButton.prototype.LINE_LEN = 20;
 
     function PopupButton(root, a, b, c, d) {
       this.root = root;
@@ -37,19 +39,58 @@
       g.save();
       gradient = g.createLinearGradient(0, this.rect.t + 10, 0, this.rect.b - 10);
       if (this.isHover()) {
-        gradient.addColorStop(0, "#666");
-        gradient.addColorStop(1, "#999");
+        gradient.addColorStop(0, "#888");
+        gradient.addColorStop(1, "#EEE");
       } else {
-        gradient.addColorStop(0, "#999");
-        gradient.addColorStop(1, "#666");
+        gradient.addColorStop(0, "#EEE");
+        gradient.addColorStop(1, "#999");
       }
       g.fillStyle = gradient;
       this.root.roundRect(g, this.rect.l, this.rect.t, this.rect.r, this.rect.b, this.radius);
+      if (this.isActive()) {
+        g.strokeStyle = "#040";
+        g.lineWidth = 2;
+      } else {
+        g.strokeStyle = "#444";
+        g.lineWidth = 1;
+      }
+      g.stroke();
       g.fill();
       g.restore();
-      if (this.renderContent) {
-        return this.renderContent(g, data);
+      return this.renderContent(g, data);
+    };
+
+    PopupButton.prototype.renderContent = function(g, data) {
+      var a, c, cx, cy, ddx, ddy, dx, dy, h, i, id, len, pos, ref, w;
+      if (data == null) {
+        data = {};
       }
+      h = this.rect.b - this.rect.t;
+      w = this.rect.r - this.rect.l;
+      cx = this.rect.l + w * 0.5;
+      cy = this.rect.t + h * 0.5;
+      a = this.LINE_LEN;
+      c = a * Math.sin(Math.PI / 3);
+      g.save();
+      g.strokeStyle = "#080";
+      g.lineWidth = 2;
+      g.beginPath();
+      ref = this.free;
+      for (id = i = 0, len = ref.length; i < len; id = ++i) {
+        pos = ref[id];
+        dx = pos.x - this.root.cell.x;
+        dy = pos.y - this.root.cell.y;
+        ddx = (dx + dy) * 1.5 * a;
+        ddy = (dy - dx) * c;
+        g.moveTo(cx, cy);
+        g.lineTo(cx + ddx, cy + ddy);
+      }
+      g.stroke();
+      g.strokeStyle = "#800";
+      g.beginPath();
+      g.arc(cx, cy, 5, 0, 7);
+      g.closePath();
+      return g.fill();
     };
 
     PopupButton.prototype.setHover = function(val) {
@@ -91,8 +132,15 @@
     };
 
     PopupButton.prototype.onClick = function(e) {
+      var ref;
       if (this.isOnElement(e.offsetX, e.offsetY)) {
-        return this.setActive(true);
+        this.setActive(true);
+        if ((ref = this.root.cell) != null) {
+          ref.connectTo(this.free);
+        }
+        return this.root.app.state = this.root.app.GAME;
+      } else {
+        return this.setActive(false);
       }
     };
 
@@ -103,9 +151,7 @@
   GamePopup = (function() {
     GamePopup.prototype.rect = void 0;
 
-    GamePopup.prototype.radius = 10;
-
-    GamePopup.prototype.btn_radius = 5;
+    GamePopup.prototype.radius = 5;
 
     GamePopup.prototype.buttons = void 0;
 
@@ -118,7 +164,6 @@
       this.buttons = new Array();
       switch (vers) {
         case this._.GET_V:
-          console.log('create GET_V version');
           this.width = 200;
           this.height = 100 + 0;
           c = this.app.c;
@@ -137,11 +182,11 @@
 
     GamePopup.prototype.roundRect = function(g, x1, y1, x2, y2, radius) {
       g.beginPath();
-      g.moveTo(x1, y1 + radius);
-      g.arcTo(x1, y1, x2, y1, radius);
-      g.arcTo(x2, y1, x2, y2, radius);
-      g.arcTo(x2, y2, x1, y2, radius);
-      g.arcTo(x1, y2, x1, y1, radius);
+      g.moveTo(x1, y1 + radius * 2);
+      g.arcTo(x1, y1, x2, y1, radius * 2);
+      g.arcTo(x2, y1, x2, y2, radius * 2);
+      g.arcTo(x2, y2, x1, y2, radius * 2);
+      g.arcTo(x1, y2, x1, y1, radius * 2);
       return g.closePath();
     };
 

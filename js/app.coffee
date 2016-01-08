@@ -64,12 +64,14 @@ class GameApp
           if free.length > 1
             @getv_popup.cell = cell
             @getv_popup.free = free
+            for cells, id in free
+              @getv_popup.buttons[id].free = cells
             @state = @GET_V
-            cell.connectTo(free[0])
+            # cell.connectTo(free[0])
           else if free.length == 1
             cell.connectTo(free)
 
-          cell2 = free[~~(free.length*Math.random())]
+          # cell2 = free[~~(free.length*Math.random())]
           # if cell2?
           #   cell2.setFilled()
           #   @connectors.push(new CellConnector( @, cell, cell2)).length if cell && cell2

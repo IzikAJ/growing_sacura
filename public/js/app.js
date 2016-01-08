@@ -73,7 +73,7 @@
     };
 
     GameApp.prototype.onClick = function(e) {
-      var cell, cell2, free, ref;
+      var cell, cells, free, i, id, len, ref;
       switch (this.state) {
         case this.GAME:
           cell = HexaCell.getCellAt(this, e.offsetX, e.offsetY);
@@ -91,12 +91,14 @@
             if (free.length > 1) {
               this.getv_popup.cell = cell;
               this.getv_popup.free = free;
+              for (id = i = 0, len = free.length; i < len; id = ++i) {
+                cells = free[id];
+                this.getv_popup.buttons[id].free = cells;
+              }
               this.state = this.GET_V;
-              cell.connectTo(free[0]);
             } else if (free.length === 1) {
               cell.connectTo(free);
             }
-            cell2 = free[~~(free.length * Math.random())];
             console.log((free.map(function(v) {
               return (v.map(function(c) {
                 return [c.x, c.y].join();

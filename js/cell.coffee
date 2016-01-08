@@ -57,8 +57,8 @@ class HexaCell
 
     g.lineWidth = 1
     g.strokeStyle = "#000"
-    g.strokeText("#{@x},#{@y}", xx, yy)
-    g.strokeText(@data, xx, yy+10) if @data?
+    # g.strokeText("#{@x},#{@y}", xx, yy)
+    # g.strokeText(@data, xx, yy+10) if @data?
 
   position: (x, y)->
     a = @CELL_SIDE
