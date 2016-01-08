@@ -90,9 +90,12 @@ class GameApp
           # render changes
         @render()
 
+      # when @GET_V
+        # @state = @GAME
+        # @render()
       when @GET_V
-        @state = @GAME
-        @render()
+        @getv_popup.onClick(e)
+        @getv_popup.render(false)
 
     return true
 
@@ -106,6 +109,11 @@ class GameApp
           @hover_cell = cell
           # render changes
           @render()
+
+      when @GET_V
+        @getv_popup.onMove(e)
+        @getv_popup.render(false)
+
     return true
 
   render: ()->

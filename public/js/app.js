@@ -106,8 +106,8 @@
           this.render();
           break;
         case this.GET_V:
-          this.state = this.GAME;
-          this.render();
+          this.getv_popup.onClick(e);
+          this.getv_popup.render(false);
       }
       return true;
     };
@@ -127,6 +127,10 @@
             this.hover_cell = cell;
             this.render();
           }
+          break;
+        case this.GET_V:
+          this.getv_popup.onMove(e);
+          this.getv_popup.render(false);
       }
       return true;
     };
