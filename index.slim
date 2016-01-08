@@ -2,11 +2,14 @@ html
   head
     title TODO
     link href="css/main.css" media="all" rel="stylesheet" /
-    script src="js/jquery-1.11.3.min.js"
-    / script src="js/main.js"
-    script src="js/cell.js"
-    script src="js/map.js"
-    script src="js/app.js"
+    / vendor scripts
+    script src="vendor/js/jquery-1.11.3.min.js"
+    / custom scripts
+    script src="public/js/connector.js"
+    script src="public/js/cell.js"
+    script src="public/js/map.js"
+    script src="public/js/popup.js"
+    script src="public/js/app.js"
     
   body
     .pane
@@ -14,5 +17,6 @@ html
       .content
         canvas.canvas width="600px" height="400px" /
 
+    /! livereload script
     javascript:
       document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>')

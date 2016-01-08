@@ -1,11 +1,11 @@
 class HexaMap
   @CLOSEST_CELLS =
-    0:  { dx:  1, dy: -1 }
-    2:  { dx:  1, dy:  0 }
-    4:  { dx:  0, dy:  1 }
-    6:  { dx: -1, dy:  1 }
-    8:  { dx: -1, dy:  0 }
-    10: { dx:  0, dy: -1 }
+    2: { dx:  1, dy: -1, key:  12 }
+    5: { dx:  1, dy:  0, key:  2 }
+    7: { dx:  0, dy:  1, key:  4 }
+    6: { dx: -1, dy:  1, key:  6 }
+    3: { dx: -1, dy:  0, key:  8 }
+    1: { dx:  0, dy: -1, key: 10 }
   map: undefined
   offset: undefined
 
@@ -52,6 +52,9 @@ class HexaMap
       for cell, ix in row
         if cell != undefined
           cell.render()
+
+    for conn, i in @app.connectors
+      conn.render()
 
     return
 
@@ -121,6 +124,17 @@ class HexaMap
 
     shovel.filter (cell)->
       cell != undefined
+
+  @splitFreeCells: (app, cell)->
+    ans = new Array()
+    free = cell.freeCells(app)
+    v = free.filter (pos)=>
+      !!(@CLOSEST_CELLS[(cell.y - pos.y + 1)*3 + cell.x - pos.x + 1].key % 4)
+    ans.push(v) if v.length > 0
+    v = free.filter (pos)=>
+      !(@CLOSEST_CELLS[(cell.y - pos.y + 1)*3 + cell.x - pos.x + 1].key % 4)
+    ans.push(v) if v.length > 0
+    ans
 
   generateMap: (size=5, rate=0.8, deep = 0)->
     map = []
