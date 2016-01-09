@@ -8,8 +8,6 @@
 
     GameApp.prototype.map = void 0;
 
-    GameApp.prototype.connectors = void 0;
-
     GameApp.prototype.c = void 0;
 
     GameApp.prototype.g = void 0;
@@ -30,7 +28,6 @@
       this._ = GameApp;
       this.c = element;
       this.g = this.c.getContext("2d");
-      this.connectors = new Array();
       this.map = new HexaMap(this);
       this.getv_popup = new GamePopup(this, GamePopup.GET_V);
       if (this.c) {
@@ -60,15 +57,6 @@
     }
 
     GameApp.prototype.onDblClick = function(e) {
-      var cell;
-      switch (this.state) {
-        case this.GAME:
-          cell = HexaCell.getCellAt(this, e.offsetX, e.offsetY);
-          if (cell) {
-            cell.setFilled(!cell.isFilled());
-            this.render();
-          }
-      }
       return false;
     };
 
@@ -99,11 +87,6 @@
             } else if (free.length === 1) {
               cell.connectTo(free);
             }
-            console.log((free.map(function(v) {
-              return (v.map(function(c) {
-                return [c.x, c.y].join();
-              })).join('; ');
-            })).join(' | '));
           }
           this.render();
           break;
@@ -162,7 +145,8 @@
 
   $(function() {
     var game;
-    return game = new GameApp($(".content .canvas")[0]);
+    game = new GameApp($(".content .canvas")[0]);
+    return window.app = game;
   });
 
   window.GameApp = GameApp;

@@ -74,10 +74,16 @@
 
     HexaCell.prototype.position = function(x, y) {
       var a, c, xx, yy;
+      if (x == null) {
+        x = void 0;
+      }
+      if (y == null) {
+        y = void 0;
+      }
       a = this.CELL_SIDE;
       c = this.CELL_SIDE * Math.sin(Math.PI / 3);
-      xx = 1.5 * (a + this.CELL_OFFSET) * (x + y);
-      yy = (c + this.CELL_OFFSET) * (y - x);
+      xx = 1.5 * (a + this.CELL_OFFSET) * ((x || this.x) + (y || this.y));
+      yy = (c + this.CELL_OFFSET) * ((y || this.y) - (x || this.x));
       return {
         x: xx,
         y: yy
@@ -143,7 +149,7 @@
           return this.connectTo(this.app.map.getCell(cell2.x, cell2.y));
         } else {
           if (cell2) {
-            this.app.connectors.push(new CellConnector(this.app, this, cell2)).length;
+            this.app.map.connectors.push(new CellConnector(this.app, this, cell2)).length;
           }
           return cell2.setFilled();
         }

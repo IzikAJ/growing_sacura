@@ -30,7 +30,7 @@ class PopupButton
 
     g.fillStyle = gradient
     # g.fillStyle = "#999"
-    @root.roundRect(g, @rect.l, @rect.t, @rect.r, @rect.b, @radius)
+    GameUtils.roundRect(g, @rect.l, @rect.t, @rect.r, @rect.b, @radius)
     if @isActive()
       g.strokeStyle = "#040"
       g.lineWidth = 2
@@ -78,17 +78,8 @@ class PopupButton
   isActive: ->
     !!(@state & PopupButton.ACTIVE)
 
-  @isOnRect: (x, y, x1, y1, x2, y2)->
-    (x >= x1) && (x <= x2) && (y >= y1) && (y <= y2)
-  @isOnCircle: (x, y, x1, y1, r)->
-    ((x1-x)*(x1-x)+(y1-y)*(y1-y)) <= (r*r)
   isOnElement: (x, y)->
-    PopupButton.isOnRect(x, y, @rect.l+@radius, @rect.t, @rect.r-@radius, @rect.b) ||
-    PopupButton.isOnRect(x, y, @rect.l, @rect.t+@radius, @rect.r, @rect.b-@radius) ||
-    PopupButton.isOnCircle(x, y, @rect.l+@radius, @rect.t+@radius) ||
-    PopupButton.isOnCircle(x, y, @rect.r-@radius, @rect.t+@radius) ||
-    PopupButton.isOnCircle(x, y, @rect.l+@radius, @rect.b-@radius) ||
-    PopupButton.isOnCircle(x, y, @rect.r-@radius, @rect.b-@radius)
+    GameUtils.isOnRoundRect(x, y, @rect.l, @rect.t, @rect.r, @rect.b, @radius)
 
   onMove: (e)->
     @setHover(@isOnElement(e.offsetX, e.offsetY))
@@ -128,15 +119,6 @@ class GamePopup
         @free = undefined
         @cell = undefined
 
-  roundRect: (g, x1, y1, x2, y2, radius)->
-    g.beginPath()
-    g.moveTo(x1, y1 + radius*2)
-    g.arcTo(x1, y1, x2, y1, radius*2)
-    g.arcTo(x2, y1, x2, y2, radius*2)
-    g.arcTo(x2, y2, x1, y2, radius*2)
-    g.arcTo(x1, y2, x1, y1, radius*2)
-    g.closePath()
-
   renderPopupBG: (shadow)->
     c = @app.c
     g = @app.g
@@ -146,7 +128,7 @@ class GamePopup
     g.strokeStyle = "#000"
     g.lineWidth = 2
 
-    @roundRect(g, @rect.l, @rect.t, @rect.r, @rect.b, @radius)
+    GameUtils.roundRect(g, @rect.l, @rect.t, @rect.r, @rect.b, @radius)
 
     g.shadowBlur = 0
     g.stroke()

@@ -46,7 +46,7 @@
         gradient.addColorStop(1, "#999");
       }
       g.fillStyle = gradient;
-      this.root.roundRect(g, this.rect.l, this.rect.t, this.rect.r, this.rect.b, this.radius);
+      GameUtils.roundRect(g, this.rect.l, this.rect.t, this.rect.r, this.rect.b, this.radius);
       if (this.isActive()) {
         g.strokeStyle = "#040";
         g.lineWidth = 2;
@@ -115,16 +115,8 @@
       return !!(this.state & PopupButton.ACTIVE);
     };
 
-    PopupButton.isOnRect = function(x, y, x1, y1, x2, y2) {
-      return (x >= x1) && (x <= x2) && (y >= y1) && (y <= y2);
-    };
-
-    PopupButton.isOnCircle = function(x, y, x1, y1, r) {
-      return ((x1 - x) * (x1 - x) + (y1 - y) * (y1 - y)) <= (r * r);
-    };
-
     PopupButton.prototype.isOnElement = function(x, y) {
-      return PopupButton.isOnRect(x, y, this.rect.l + this.radius, this.rect.t, this.rect.r - this.radius, this.rect.b) || PopupButton.isOnRect(x, y, this.rect.l, this.rect.t + this.radius, this.rect.r, this.rect.b - this.radius) || PopupButton.isOnCircle(x, y, this.rect.l + this.radius, this.rect.t + this.radius) || PopupButton.isOnCircle(x, y, this.rect.r - this.radius, this.rect.t + this.radius) || PopupButton.isOnCircle(x, y, this.rect.l + this.radius, this.rect.b - this.radius) || PopupButton.isOnCircle(x, y, this.rect.r - this.radius, this.rect.b - this.radius);
+      return GameUtils.isOnRoundRect(x, y, this.rect.l, this.rect.t, this.rect.r, this.rect.b, this.radius);
     };
 
     PopupButton.prototype.onMove = function(e) {
@@ -180,16 +172,6 @@
       }
     }
 
-    GamePopup.prototype.roundRect = function(g, x1, y1, x2, y2, radius) {
-      g.beginPath();
-      g.moveTo(x1, y1 + radius * 2);
-      g.arcTo(x1, y1, x2, y1, radius * 2);
-      g.arcTo(x2, y1, x2, y2, radius * 2);
-      g.arcTo(x2, y2, x1, y2, radius * 2);
-      g.arcTo(x1, y2, x1, y1, radius * 2);
-      return g.closePath();
-    };
-
     GamePopup.prototype.renderPopupBG = function(shadow) {
       var c, g;
       c = this.app.c;
@@ -198,7 +180,7 @@
       g.fillStyle = "#fff";
       g.strokeStyle = "#000";
       g.lineWidth = 2;
-      this.roundRect(g, this.rect.l, this.rect.t, this.rect.r, this.rect.b, this.radius);
+      GameUtils.roundRect(g, this.rect.l, this.rect.t, this.rect.r, this.rect.b, this.radius);
       g.shadowBlur = 0;
       g.stroke();
       if (shadow) {

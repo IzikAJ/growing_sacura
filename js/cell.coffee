@@ -60,11 +60,11 @@ class HexaCell
     # g.strokeText("#{@x},#{@y}", xx, yy)
     # g.strokeText(@data, xx, yy+10) if @data?
 
-  position: (x, y)->
+  position: (x=undefined, y=undefined)->
     a = @CELL_SIDE
     c = @CELL_SIDE * Math.sin(Math.PI/3)
-    xx = 1.5 * (a + @CELL_OFFSET) * (x + y)
-    yy = (c + @CELL_OFFSET) * (y - x)
+    xx = 1.5 * (a + @CELL_OFFSET) * ((x||@x) + (y||@y))
+    yy = (c + @CELL_OFFSET) * ((y||@y) - (x||@x))
     {x: xx, y: yy}
 
   cellPosition: ()->
@@ -112,7 +112,7 @@ class HexaCell
       else if !HexaCell.prototype.isPrototypeOf(cell2)
         @connectTo(@app.map.getCell(cell2.x, cell2.y))
       else
-        @app.connectors.push(new CellConnector( @app, @, cell2)).length if cell2
+        @app.map.connectors.push(new CellConnector(@app, @, cell2)).length if cell2
         cell2.setFilled()
 
   @getCellPositionAt: (app, mouse_x, mouse_y)->

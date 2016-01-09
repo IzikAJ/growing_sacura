@@ -7,32 +7,59 @@ class HexaMap
     3: { dx: -1, dy:  0, key:  8 }
     1: { dx:  0, dy: -1, key: 10 }
   map: undefined
+  all: undefined
+  map_size: undefined
+  seeds: undefined
+  connectors: undefined
   offset: undefined
 
   constructor: (@app, map = undefined)->
     @_ = HexaMap
-
-    @map = map || @generateMap()
-    map_size = @getMapRect(@map)
-    dw = (@app.c.width - map_size.width) * 0.5
-    dh = (@app.c.height - map_size.height) * 0.5
-    @offset = { x: -map_size.from.x + dw, y: -map_size.from.y + dh }
+    @loadMap(map || @generateMap(8))
 
   getCell: (x, y)->
     @map[y][x] if @map[y] && @map[y][x] != undefined
 
-  getMapRect: (map=undefined)->
-    map = @map unless map
-    x_min = y_min = x_max = y_max = 0
-    for row, iy in map
-      for cell, ix in row
-        if cell != undefined
-          p = cell.position(ix, iy)
-          x_min = p.x if p.x < x_min
-          x_max = p.x if p.x > x_max
-          y_min = p.y if p.y < y_min
-          y_max = p.y if p.y > y_max
+  loadMap: (map, seedsCount=5)->
+    @map = map
+    @all = @._.getAllCells(map)
+    @map_size = @getMapRect(@map)
+    if @app.c.width < @map_size.width + @app.CELL_SIDE*4
+      @app.c.width = @map_size.width + @app.CELL_SIDE*4
+    if @app.c.height < @map_size.height + @app.CELL_SIDE*4
+      @app.c.height = @map_size.height + @app.CELL_SIDE*4
+    dw = (@app.c.width - @map_size.width) * 0.5
+    dh = (@app.c.height - @map_size.height) * 0.5
+    @offset = { x: -@map_size.from.x + dw, y: -@map_size.from.y + dh }
+    @seeds = GameUtils.randItems(@all, seedsCount)
+    @applySeeds(@seeds)
+    @connectors = new Array()
 
+  clearField: ()->
+    for cell in @all
+      cell.setFilled(false)
+      cell.connectors = new Array()
+    @connectors = new Array()
+    @applySeeds()
+    @app.render()
+
+  randomizeMap: (mapSize = 8, seedsCount=5)->
+    map = @generateMap(mapSize)
+    @loadMap(map, seedsCount)
+    @app.render()
+
+  applySeeds: (seeds=undefined)->
+    for cell in (seeds || @seeds)
+      cell.setFilled()
+
+  getMapRect: ()->
+    x_min = y_min = x_max = y_max = 0
+    for cell in @all
+      p = cell.position()
+      x_min = p.x if p.x < x_min
+      x_max = p.x if p.x > x_max
+      y_min = p.y if p.y < y_min
+      y_max = p.y if p.y > y_max
     {
       from:
         x: x_min
@@ -45,17 +72,11 @@ class HexaMap
     }
 
   render: ()->
-    @renderMap()
+    for cell in @all
+      cell.render()
 
-  renderMap: ()->
-    for row, iy in @map
-      for cell, ix in row
-        if cell != undefined
-          cell.render()
-
-    for conn, i in @app.connectors
+    for conn, i in @connectors
       conn.render()
-
     return
 
   countCells: (map, val)->
@@ -66,12 +87,14 @@ class HexaMap
     ans = 0
     for row, iy in map
       for cell, ix in row
-        ans++ if map[iy][ix] == val
+        if $.isFunction(val)
+          ans++ if val(map[iy][ix])
+        else
+          ans++ if map[iy][ix] == val
     ans
 
   waves: (map, x, y)->
-    map = @map unless map
-    @_.waves(map, x, y)
+    @_.waves(map || @map, x, y)
 
   @waves: (map, x, y)->
     wmap = new Array(map.length)
@@ -110,7 +133,7 @@ class HexaMap
   getCells: (pos=[])->
     ans = []
     for p in pos
-      ans.push(@map[p.y][p.x]) if @map[p.y] && @map[p.y][p.x] != undefined
+      ans.push(@map[p.y][p.x]) if @getCell(p.x, p.y) != undefined
     ans
 
   getAllCells: (map=undefined)->
@@ -118,48 +141,35 @@ class HexaMap
     @_.getAllCells(map)
 
   @getAllCells: (map)->
-    shovel = []
-    for row, iy in map
-      shovel = shovel.concat(map[iy])
-
-    shovel.filter (cell)->
+    GameUtils.flatten(map).filter (cell)->
       cell != undefined
 
   @splitFreeCells: (app, cell)->
-    ans = new Array()
     free = cell.freeCells(app)
-    v = free.filter (pos)=>
-      !!(@CLOSEST_CELLS[(cell.y - pos.y + 1)*3 + cell.x - pos.x + 1].key % 4)
-    ans.push(v) if v.length > 0
-    v = free.filter (pos)=>
+    GameUtils.splitArray free, (pos)=>
       !(@CLOSEST_CELLS[(cell.y - pos.y + 1)*3 + cell.x - pos.x + 1].key % 4)
-    ans.push(v) if v.length > 0
-    ans
 
-  generateMap: (size=5, rate=0.8, deep = 0)->
-    map = []
-    for iy in [0..size]
-      temp = []
-      for ix in [0..size]
-        temp.push( if Math.random() < rate then new HexaCell(@app, ix, iy) else undefined )
-      map.push(temp)
-      pmap = @map
+  generateMap: (size=5, rate=0.8)->
+    for round in [0..10]
+      map = new Array(size)
+      for iy in [0..size-1]
+        temp = new Array(size)
+        for ix in [0..size-1]
+          temp[ix] = if Math.random() < rate then new HexaCell(@app, ix, iy) else undefined
+        map[iy] = temp
 
-    return null if deep>10
+      all = @_.getAllCells(map)
+      rcell = GameUtils.rand(all)
+      empty = size*size
+      if rcell
+        waves = @waves(map, rcell.x, rcell.y)
+        empty = @countCells(waves, 0)
 
-    times = 3
-    rcell = @_.getAllCells(map)[0]
-    empty = size*size
-    if rcell
-      waves = @waves(map, rcell.x, rcell.y)
-      empty = @countCells(waves, 0)
-
-    if empty > size*size*rate*0.5
-      map = @generateMap(size, rate, deep+1)
-    else
-      for row, iy in waves
-        for cell, ix in row
-          map[iy][ix] = undefined if cell == 0
+      if empty < size*size*rate*0.5
+        for row, iy in waves
+          for cell, ix in row
+            map[iy][ix] = undefined if cell == 0
+        break
     map
 
 window.HexaMap = HexaMap

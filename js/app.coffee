@@ -2,7 +2,6 @@ class GameApp
   CELL_SIDE: 30
   CELL_OFFSET: 2
   map: undefined
-  connectors: undefined
   c: undefined
   g: undefined
   hover_cell: undefined
@@ -18,7 +17,6 @@ class GameApp
     @_ = GameApp
     @c = element
     @g = @c.getContext("2d")
-    @connectors = new Array()
     @map = new HexaMap(@)
     @getv_popup = new GamePopup(@, GamePopup.GET_V)
 
@@ -39,14 +37,13 @@ class GameApp
     return
 
   onDblClick: (e)->
-    switch @state
-      when @GAME
-        cell = HexaCell.getCellAt(@, e.offsetX, e.offsetY)
-        if cell
-          cell.setFilled(!cell.isFilled())
-          # render changes
-          @render()
-
+    # switch @state
+    #   when @GAME
+    #     cell = HexaCell.getCellAt(@, e.offsetX, e.offsetY)
+    #     if cell
+    #       cell.setFilled(!cell.isFilled())
+    #       # render changes
+    #       @render()
     return false
 
   onClick: (e)->
@@ -71,30 +68,8 @@ class GameApp
           else if free.length == 1
             cell.connectTo(free)
 
-          # cell2 = free[~~(free.length*Math.random())]
-          # if cell2?
-          #   cell2.setFilled()
-          #   @connectors.push(new CellConnector( @, cell, cell2)).length if cell && cell2
-
-          console.log (
-            free.map (v)-> (
-              v.map (c)->
-                [c.x, c.y].join()
-              ).join('; ')
-            ).join(' | ')
-
-          # # count passability of cells (for debug)
-          # waves = HexaMap.waves(@map.map, @active_cell.x, @active_cell.y)
-          # for row, iy in @map.map
-          #   for cell, ix in row
-          #     cell.data = waves?[iy]?[ix] if cell != undefined
-
-          # render changes
         @render()
 
-      # when @GET_V
-        # @state = @GAME
-        # @render()
       when @GET_V
         @getv_popup.onClick(e)
         @getv_popup.render(false)
@@ -139,6 +114,7 @@ class GameApp
 
 $ ->
   game = new GameApp($(".content .canvas")[0])
+  window.app = game
   # game.render()
 
 window.GameApp = GameApp
