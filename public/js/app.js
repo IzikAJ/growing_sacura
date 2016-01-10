@@ -18,18 +18,25 @@
 
     GameApp.prototype.state = 1;
 
+    GameApp.prototype.controlls = void 0;
+
+    GameApp.prototype.resetMapBtn = void 0;
+
+    GameApp.prototype.randomMapBtn = void 0;
+
     GameApp.prototype.MENU = 0;
 
     GameApp.prototype.GAME = 1;
 
     GameApp.prototype.GET_V = 2;
 
-    function GameApp(element) {
+    function GameApp(root) {
       this._ = GameApp;
-      this.c = element;
-      this.g = this.c.getContext("2d");
+      this.root = $(root).first();
+      this.addControls();
       this.map = new HexaMap(this);
-      this.getv_popup = new GamePopup(this, GamePopup.GET_V);
+      this.getv_popup = new ArrowsPopup(this);
+      this.sure_popup = new QueryPopup(this);
       if (this.c) {
         $(this.c).on("click", (function(_this) {
           return function(e) {
@@ -56,12 +63,57 @@
       return;
     }
 
+    GameApp.prototype.addControls = function() {
+      var canvas, yes_no_buttons;
+      console.log("addControls");
+      canvas = $("<canvas/>");
+      canvas.attr('width', 600);
+      canvas.attr('height', 400);
+      this.c = canvas[0];
+      this.g = this.c.getContext('2d');
+      this.root.append(canvas);
+      this.controlls = $("<div></div>");
+      this.controlls.addClass("controlls");
+      this.resetMapBtn = $("<a href='javascript:void(0);'>Reset</a>");
+      this.resetMapBtn.addClass("button reset");
+      this.controlls.append(this.resetMapBtn);
+      yes_no_buttons = [$("<a href='javascript:void(0);'>No</a>").addClass("button reject"), $("<a href='javascript:void(0);'>Yes</a>").addClass("button accept")];
+      this.resetMapBtn.on('click', (function(_this) {
+        return function(e) {
+          if (_this.map.isDirty()) {
+            return _this.sure_popup.show(yes_no_buttons, function(key, val) {
+              if (key) {
+                return _this.map.resetMap();
+              }
+            });
+          }
+        };
+      })(this));
+      this.randomMapBtn = $("<a href='javascript:void(0);'>Random</a>");
+      this.randomMapBtn.addClass("button random");
+      this.controlls.append(this.randomMapBtn);
+      this.randomMapBtn.on('click', (function(_this) {
+        return function(e) {
+          if (_this.map.isDirty()) {
+            return _this.sure_popup.show(yes_no_buttons, function(key, val) {
+              if (key) {
+                return _this.map.randomizeMap();
+              }
+            });
+          } else {
+            return _this.map.randomizeMap();
+          }
+        };
+      })(this));
+      return this.root.prepend(this.controlls);
+    };
+
     GameApp.prototype.onDblClick = function(e) {
       return false;
     };
 
     GameApp.prototype.onClick = function(e) {
-      var cell, cells, free, i, id, len, ref;
+      var cell, free, ref;
       switch (this.state) {
         case this.GAME:
           cell = HexaCell.getCellAt(this, e.offsetX, e.offsetY);
@@ -79,11 +131,13 @@
             if (free.length > 1) {
               this.getv_popup.cell = cell;
               this.getv_popup.free = free;
-              for (id = i = 0, len = free.length; i < len; id = ++i) {
-                cells = free[id];
-                this.getv_popup.buttons[id].free = cells;
-              }
               this.state = this.GET_V;
+              this.getv_popup.show(this.getv_popup.items(), (function(_this) {
+                return function(key, val) {
+                  cell.connectTo(free[key]);
+                  return _this.state = _this.GAME;
+                };
+              })(this));
             } else if (free.length === 1) {
               cell.connectTo(free);
             }
@@ -91,8 +145,7 @@
           this.render();
           break;
         case this.GET_V:
-          this.getv_popup.onClick(e);
-          this.getv_popup.render(false);
+          return;
       }
       return true;
     };
@@ -114,8 +167,7 @@
           }
           break;
         case this.GET_V:
-          this.getv_popup.onMove(e);
-          this.getv_popup.render(false);
+          return;
       }
       return true;
     };
@@ -127,11 +179,6 @@
           this.g.clearRect(0, 0, this.c.width, this.c.height);
           return this.map.render();
         case this.GET_V:
-          this.g.clearRect(0, 0, this.c.width, this.c.height);
-          this.map.render();
-          this.g.fillStyle = "rgba(0, 0, 0, 0.5)";
-          this.g.fillRect(0, 0, this.c.width, this.c.height);
-          return this.getv_popup.render();
       }
     };
 
@@ -145,7 +192,7 @@
 
   $(function() {
     var game;
-    game = new GameApp($(".content .canvas")[0]);
+    game = new GameApp($(".content .game"));
     return window.app = game;
   });
 

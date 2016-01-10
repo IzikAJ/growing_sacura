@@ -151,6 +151,7 @@
           if (cell2) {
             this.app.map.connectors.push(new CellConnector(this.app, this, cell2)).length;
           }
+          this.app.map.setDirty();
           return cell2.setFilled();
         }
       }

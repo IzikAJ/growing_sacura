@@ -113,6 +113,7 @@ class HexaCell
         @connectTo(@app.map.getCell(cell2.x, cell2.y))
       else
         @app.map.connectors.push(new CellConnector(@app, @, cell2)).length if cell2
+        @app.map.setDirty()
         cell2.setFilled()
 
   @getCellPositionAt: (app, mouse_x, mouse_y)->

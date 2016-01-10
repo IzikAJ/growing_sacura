@@ -12,6 +12,12 @@ class HexaMap
   seeds: undefined
   connectors: undefined
   offset: undefined
+  state: 0
+
+  # states
+  @DIRTY: 1
+  @COMPLETED: 2
+  @NO_WAY: 4
 
   constructor: (@app, map = undefined)->
     @_ = HexaMap
@@ -35,17 +41,20 @@ class HexaMap
     @applySeeds(@seeds)
     @connectors = new Array()
 
-  clearField: ()->
+  resetMap: ()->
     for cell in @all
       cell.setFilled(false)
       cell.connectors = new Array()
     @connectors = new Array()
     @applySeeds()
+    @setDirty(false)
+    @app.state = @app.GAME
     @app.render()
 
   randomizeMap: (mapSize = 8, seedsCount=5)->
     map = @generateMap(mapSize)
     @loadMap(map, seedsCount)
+    @app.state = @app.GAME
     @app.render()
 
   applySeeds: (seeds=undefined)->
@@ -171,5 +180,25 @@ class HexaMap
             map[iy][ix] = undefined if cell == 0
         break
     map
+
+  setState: (state, val=true)->
+    @state = (@state | state) ^ if val then 0 else state
+  isState: (state)->
+    !!(@state & state)
+
+  setDirty: (val=true)->
+    @state = (@state | HexaMap.DIRTY) ^ if val then 0 else HexaMap.DIRTY
+  isDirty: ->
+    !!(@state & HexaMap.DIRTY)
+
+  setCompleted: (val=true)->
+    @state = (@state | HexaMap.COMPLETED) ^ if val then 0 else HexaMap.COMPLETED
+  isCompleted: ->
+    !!(@state & HexaMap.COMPLETED)
+
+  setNoWay: (val=true)->
+    @state = (@state | HexaMap.NO_WAY) ^ if val then 0 else HexaMap.NO_WAY
+  isNoWay: ->
+    !!(@state & HexaMap.NO_WAY)
 
 window.HexaMap = HexaMap

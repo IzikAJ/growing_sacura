@@ -1,85 +1,135 @@
 (function() {
-  var GamePopup, PopupButton;
+  var ArrowsPopup, BasePopup, QueryPopup,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
-  PopupButton = (function() {
-    PopupButton.prototype.radius = 2;
-
-    PopupButton.prototype.state = 0;
-
-    PopupButton.prototype.free = void 0;
-
-    PopupButton.DEFAULT = 0;
-
-    PopupButton.HOVER = 1;
-
-    PopupButton.ACTIVE = 2;
-
-    PopupButton.prototype.LINE_LEN = 20;
-
-    function PopupButton(root, a, b, c, d) {
-      this.root = root;
-      if (Number.isFinite(a)) {
-        this.rect = {
-          l: a,
-          t: b,
-          r: c,
-          b: d
+  BasePopup = (function() {
+    function BasePopup(app) {
+      this.app = app;
+      this.popup = $("<div class='popup_overlay'><div class='popup'><div class='popup_content'></div></div></div>");
+      this["class"] = this.constructor.name.replace(/[A-Z]/g, function(a, b, c, d, e) {
+        if (b > 0) {
+          return '_' + a;
+        } else {
+          return a;
+        }
+      }).toLowerCase();
+      this.popup.addClass(this["class"]);
+      this.app.root.find('.popup_overlay').filter("." + this["class"]).detach();
+      this.app.root.append(this.popup);
+      this.container = this.popup.find('.popup_content');
+      this.container.empty();
+      this.setContent();
+      this.popup.on('click touchstart', (function(_this) {
+        return function(e) {
+          if ($(e.target).closest('.popup_content').length === 0) {
+            _this.hide();
+            return false;
+          }
         };
-      } else {
-        this.rect = a;
-      }
-      return;
+      })(this));
     }
 
-    PopupButton.prototype.render = function(g, data) {
-      var gradient;
-      if (data == null) {
-        data = {};
-      }
-      g.save();
-      gradient = g.createLinearGradient(0, this.rect.t + 10, 0, this.rect.b - 10);
-      if (this.isHover()) {
-        gradient.addColorStop(0, "#888");
-        gradient.addColorStop(1, "#EEE");
-      } else {
-        gradient.addColorStop(0, "#EEE");
-        gradient.addColorStop(1, "#999");
-      }
-      g.fillStyle = gradient;
-      GameUtils.roundRect(g, this.rect.l, this.rect.t, this.rect.r, this.rect.b, this.radius);
-      if (this.isActive()) {
-        g.strokeStyle = "#040";
-        g.lineWidth = 2;
-      } else {
-        g.strokeStyle = "#444";
-        g.lineWidth = 1;
-      }
-      g.stroke();
-      g.fill();
-      g.restore();
-      return this.renderContent(g, data);
+    BasePopup.prototype.setContent = function() {
+      this.container.append('<input type="submit" value="True" />');
+      return this.container.append('<input type="submit" value="False" />');
     };
 
-    PopupButton.prototype.renderContent = function(g, data) {
-      var a, c, cx, cy, ddx, ddy, dx, dy, h, i, id, len, pos, ref, w;
-      if (data == null) {
-        data = {};
+    BasePopup.prototype.show = function() {
+      return this.popup.show();
+    };
+
+    BasePopup.prototype.hide = function() {
+      return this.popup.hide();
+    };
+
+    return BasePopup;
+
+  })();
+
+  QueryPopup = (function(superClass) {
+    extend(QueryPopup, superClass);
+
+    function QueryPopup() {
+      return QueryPopup.__super__.constructor.apply(this, arguments);
+    }
+
+    QueryPopup.prototype.setContent = function() {};
+
+    QueryPopup.prototype.show = function(elements, callback, default_result) {
+      this.elements = elements != null ? elements : void 0;
+      this.callback = callback != null ? callback : void 0;
+      if (default_result == null) {
+        default_result = void 0;
       }
-      h = this.rect.b - this.rect.t;
-      w = this.rect.r - this.rect.l;
-      cx = this.rect.l + w * 0.5;
-      cy = this.rect.t + h * 0.5;
-      a = this.LINE_LEN;
+      this.result = {
+        undefined: default_result
+      };
+      this.container.html("<ul class='query-list'></ul>");
+      $.each(this.elements, (function(_this) {
+        return function(key, element) {
+          var item;
+          if (element instanceof jQuery) {
+            item = element;
+          } else {
+            item = $("<li></li>").append(element);
+          }
+          _this.container.append(item);
+          item.attr("data-query-key", key);
+          return item.on('click', function() {
+            _this.result = {
+              key: key,
+              value: element
+            };
+            _this.hide();
+          });
+        };
+      })(this));
+      return QueryPopup.__super__.show.call(this);
+    };
+
+    QueryPopup.prototype.hide = function() {
+      if ($.isFunction(this.callback)) {
+        this.callback(this.result.key, this.result.value);
+      }
+      return QueryPopup.__super__.hide.call(this);
+    };
+
+    return QueryPopup;
+
+  })(BasePopup);
+
+  ArrowsPopup = (function(superClass) {
+    extend(ArrowsPopup, superClass);
+
+    function ArrowsPopup() {
+      return ArrowsPopup.__super__.constructor.apply(this, arguments);
+    }
+
+    ArrowsPopup.prototype.button_size = 60;
+
+    ArrowsPopup.prototype.cell = void 0;
+
+    ArrowsPopup.prototype.free = void 0;
+
+    ArrowsPopup.prototype.items = function() {
+      return [$("<canvas/>").attr('width', this.button_size).attr('height', this.button_size), $("<canvas/>").attr('width', this.button_size).attr('height', this.button_size)];
+    };
+
+    ArrowsPopup.prototype.renderArrows = function(btn, free, cell) {
+      var a, c, cx, cy, ddx, ddy, dx, dy, g, i, id, len, pos;
+      g = btn.getContext('2d');
+      g.clearRect(0, 0, this.button_size, this.button_size);
+      cx = cy = this.button_size * 0.5;
+      a = this.button_size * 0.25;
       c = a * Math.sin(Math.PI / 3);
-      g.save();
       g.strokeStyle = "#080";
       g.lineWidth = 2;
       g.beginPath();
-      ref = this.free;
-      for (id = i = 0, len = ref.length; i < len; id = ++i) {
-        pos = ref[id];
-        dx = pos.x - this.root.cell.x;
-        dy = pos.y - this.root.cell.y;
+      for (id = i = 0, len = free.length; i < len; id = ++i) {
+        pos = free[id];
+        dx = pos.x - cell.x;
+        dy = pos.y - cell.y;
         ddx = (dx + dy) * 1.5 * a;
         ddy = (dy - dx) * c;
         g.moveTo(cx, cy);
@@ -93,160 +143,30 @@
       return g.fill();
     };
 
-    PopupButton.prototype.setHover = function(val) {
-      if (val == null) {
-        val = true;
+    ArrowsPopup.prototype.show = function(elements, callback, default_result) {
+      this.elements = elements != null ? elements : void 0;
+      this.callback = callback != null ? callback : void 0;
+      if (default_result == null) {
+        default_result = void 0;
       }
-      return this.state = (this.state | PopupButton.HOVER) ^ (val ? PopupButton.DEFAULT : PopupButton.HOVER);
-    };
-
-    PopupButton.prototype.isHover = function() {
-      return !!(this.state & PopupButton.HOVER);
-    };
-
-    PopupButton.prototype.setActive = function(val) {
-      if (val == null) {
-        val = true;
-      }
-      return this.state = (this.state | PopupButton.ACTIVE) ^ (val ? PopupButton.DEFAULT : PopupButton.ACTIVE);
-    };
-
-    PopupButton.prototype.isActive = function() {
-      return !!(this.state & PopupButton.ACTIVE);
-    };
-
-    PopupButton.prototype.isOnElement = function(x, y) {
-      return GameUtils.isOnRoundRect(x, y, this.rect.l, this.rect.t, this.rect.r, this.rect.b, this.radius);
-    };
-
-    PopupButton.prototype.onMove = function(e) {
-      return this.setHover(this.isOnElement(e.offsetX, e.offsetY));
-    };
-
-    PopupButton.prototype.onClick = function(e) {
-      var ref;
-      if (this.isOnElement(e.offsetX, e.offsetY)) {
-        this.setActive(true);
-        if ((ref = this.root.cell) != null) {
-          ref.connectTo(this.free);
-        }
-        return this.root.app.state = this.root.app.GAME;
-      } else {
-        return this.setActive(false);
-      }
-    };
-
-    return PopupButton;
-
-  })();
-
-  GamePopup = (function() {
-    GamePopup.prototype.rect = void 0;
-
-    GamePopup.prototype.radius = 5;
-
-    GamePopup.prototype.buttons = void 0;
-
-    GamePopup.GET_V = 1;
-
-    function GamePopup(app, vers) {
-      var c;
-      this.app = app;
-      this._ = GamePopup;
-      this.buttons = new Array();
-      switch (vers) {
-        case this._.GET_V:
-          this.width = 200;
-          this.height = 100 + 0;
-          c = this.app.c;
-          this.rect = {
-            t: (c.height - this.height) * 0.5,
-            b: (c.height - this.height) * 0.5 + this.height,
-            l: (c.width - this.width) * 0.5,
-            r: (c.width - this.width) * 0.5 + this.width
+      ArrowsPopup.__super__.show.call(this, this.elements, this.callback, default_result);
+      if ((this.cell != null) && (this.free != null)) {
+        return this.container.find('canvas').each((function(_this) {
+          return function(index, item) {
+            return _this.renderArrows(item, _this.free[index], _this.cell);
           };
-          this.buttons.push(new PopupButton(this, this.rect.l + 10, this.rect.t + 10, this.rect.l + this.width * 0.5 - 5, this.rect.b - 10));
-          this.buttons.push(new PopupButton(this, this.rect.l + this.width * 0.5 + 5, this.rect.t + 10, this.rect.r - 10, this.rect.b - 10));
-          this.free = void 0;
-          this.cell = void 0;
-      }
-    }
-
-    GamePopup.prototype.renderPopupBG = function(shadow) {
-      var c, g;
-      c = this.app.c;
-      g = this.app.g;
-      g.save();
-      g.fillStyle = "#fff";
-      g.strokeStyle = "#000";
-      g.lineWidth = 2;
-      GameUtils.roundRect(g, this.rect.l, this.rect.t, this.rect.r, this.rect.b, this.radius);
-      g.shadowBlur = 0;
-      g.stroke();
-      if (shadow) {
-        g.shadowBlur = 5;
-        g.shadowColor = "#666";
-        g.shadowOffsetX = 0;
-        g.shadowOffsetY = 4;
-      } else {
-        g.shadowBlur = 0;
-      }
-      g.fill();
-      return g.restore();
-    };
-
-    GamePopup.prototype.renderContent = function() {
-      var button, g, gradient, i, len, ref;
-      g = this.app.g;
-      g.save();
-      gradient = g.createLinearGradient(0, this.rect.t + 10, 0, this.rect.b - 10);
-      gradient.addColorStop(0, "#999");
-      gradient.addColorStop(1, "#666");
-      g.fillStyle = gradient;
-      ref = this.buttons;
-      for (i = 0, len = ref.length; i < len; i++) {
-        button = ref[i];
-        button.render(g, {});
-      }
-      return g.restore();
-    };
-
-    GamePopup.prototype.render = function(shadow) {
-      var g;
-      if (shadow == null) {
-        shadow = true;
-      }
-      g = this.app.g;
-      g.save();
-      this.renderPopupBG(shadow);
-      this.renderContent();
-      return g.restore();
-    };
-
-    GamePopup.prototype.onMove = function(e) {
-      var button, i, len, ref;
-      ref = this.buttons;
-      for (i = 0, len = ref.length; i < len; i++) {
-        button = ref[i];
-        button.onMove(e);
+        })(this));
       }
     };
 
-    GamePopup.prototype.onClick = function(e) {
-      var button, i, len, ref;
-      ref = this.buttons;
-      for (i = 0, len = ref.length; i < len; i++) {
-        button = ref[i];
-        button.onClick(e);
-      }
-    };
+    return ArrowsPopup;
 
-    return GamePopup;
+  })(QueryPopup);
 
-  })();
+  window.BasePopup = BasePopup;
 
-  window.PopupButton = PopupButton;
+  window.QueryPopup = QueryPopup;
 
-  window.GamePopup = GamePopup;
+  window.ArrowsPopup = ArrowsPopup;
 
 }).call(this);

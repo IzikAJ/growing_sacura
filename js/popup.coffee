@@ -1,62 +1,77 @@
-class PopupButton
-  radius: 2
-  state: 0
-  free: undefined
+class BasePopup
+  constructor: (@app)->
+    @popup = $("<div class='popup_overlay'><div class='popup'><div class='popup_content'></div></div></div>")
+    @class = @.constructor.name.replace(/[A-Z]/g, (a,b,c,d,e)->
+        if b > 0 then '_' + a else a
+      ).toLowerCase()
+    @popup.addClass(@class)
+    @app.root.find('.popup_overlay').filter(".#{@class}").detach()
+    @app.root.append @popup
+    @container = @popup.find('.popup_content')
+    @container.empty()
+    @setContent()
+    # close popup on miss-click
+    @popup.on 'click touchstart', (e)=>
+      if $(e.target).closest('.popup_content').length == 0
+        @hide()
+        return false
 
-  # states:
-  @DEFAULT: 0
-  @HOVER:  1
-  @ACTIVE: 2
+  setContent: ->
+    @container.append('<input type="submit" value="True" />')
+    @container.append('<input type="submit" value="False" />')
 
-  LINE_LEN: 20
+  show: ->
+    @popup.show()
+  hide: ->
+    @popup.hide()
 
-  constructor: (@root, a, b, c, d)->
-    if Number.isFinite(a)
-      @rect = { l: a, t: b, r: c, b: d }
-    else
-      @rect = a
-
+class QueryPopup extends BasePopup
+  setContent: ()->
     return
 
-  render: (g, data = {})->
-    g.save()
-    gradient = g.createLinearGradient(0, @rect.t + 10, 0, @rect.b - 10)
-    if @isHover()
-      gradient.addColorStop(0,"#888")
-      gradient.addColorStop(1,"#EEE")
-    else
-      gradient.addColorStop(0,"#EEE")
-      gradient.addColorStop(1,"#999")
+  show: (@elements=undefined, @callback=undefined, default_result=undefined)->
+    @result = { undefined: default_result }
+    @container.html("<ul class='query-list'></ul>")
+    $.each @elements, (key, element)=>
+      if element instanceof jQuery
+        item = element
+      else
+        item = $("<li></li>").append(element)
+      @container.append(item)
+      item.attr("data-query-key", key)
+      item.on 'click', =>
+        @result = {key: key, value: element}
+        @hide()
+        return
+    super()
 
-    g.fillStyle = gradient
-    # g.fillStyle = "#999"
-    GameUtils.roundRect(g, @rect.l, @rect.t, @rect.r, @rect.b, @radius)
-    if @isActive()
-      g.strokeStyle = "#040"
-      g.lineWidth = 2
-    else
-      g.strokeStyle = "#444"
-      g.lineWidth = 1
-    g.stroke()
-    g.fill()
+  hide: ->
+    @callback(@result.key, @result.value) if $.isFunction(@callback)
+    super()
 
-    g.restore()
-    @renderContent(g, data)
+class ArrowsPopup extends QueryPopup
+  button_size: 60
+  cell: undefined
+  free: undefined
 
-  renderContent: (g, data={})->
-    h = @rect.b - @rect.t
-    w = @rect.r - @rect.l
-    cx = @rect.l + w*0.5
-    cy = @rect.t + h*0.5
-    a = @LINE_LEN
+  items: ->
+    [
+      $("<canvas/>").attr('width', @button_size).attr('height', @button_size)
+      $("<canvas/>").attr('width', @button_size).attr('height', @button_size)
+    ]
+
+  renderArrows: (btn, free, cell)->
+    g = btn.getContext('2d')
+    g.clearRect(0, 0, @button_size, @button_size)
+    cx = cy = @button_size*0.5
+    a = @button_size*0.25
     c = a * Math.sin(Math.PI/3)
-    g.save()
     g.strokeStyle = "#080"
     g.lineWidth = 2
     g.beginPath()
-    for pos, id in @free
-      dx = pos.x - @root.cell.x
-      dy = pos.y - @root.cell.y
+    for pos, id in free
+      dx = pos.x - cell.x
+      dy = pos.y - cell.y
       ddx = (dx + dy) * 1.5 * a
       ddy = (dy - dx) * c
       g.moveTo(cx, cy)
@@ -68,111 +83,12 @@ class PopupButton
     g.closePath()
     g.fill()
 
-  setHover: (val=true)->
-    @state = (@state | PopupButton.HOVER) ^ if val then PopupButton.DEFAULT else PopupButton.HOVER
-  isHover: ->
-    !!(@state & PopupButton.HOVER)
+  show: (@elements=undefined, @callback=undefined, default_result=undefined)->
+    super(@elements, @callback, default_result)
+    if @cell? && @free?
+      @container.find('canvas').each (index, item)=>
+        @renderArrows(item, @free[index], @cell)
 
-  setActive: (val=true)->
-    @state = (@state | PopupButton.ACTIVE) ^ if val then PopupButton.DEFAULT else PopupButton.ACTIVE
-  isActive: ->
-    !!(@state & PopupButton.ACTIVE)
-
-  isOnElement: (x, y)->
-    GameUtils.isOnRoundRect(x, y, @rect.l, @rect.t, @rect.r, @rect.b, @radius)
-
-  onMove: (e)->
-    @setHover(@isOnElement(e.offsetX, e.offsetY))
-
-  onClick: (e)->
-    if @isOnElement(e.offsetX, e.offsetY)
-      @setActive(true)
-      @root.cell?.connectTo(@free)
-      @root.app.state = @root.app.GAME
-    else
-      @setActive(false)
-
-class GamePopup
-  rect: undefined
-  radius: 5
-  buttons: undefined
-
-  @GET_V = 1
-
-  constructor: (@app, vers)->
-    @_ = GamePopup
-    @buttons = new Array()
-    switch vers
-      when @_.GET_V
-        @width=200
-        @height=100+0
-
-        c = @app.c
-        @rect =
-          t: (c.height - @height) * 0.5
-          b: (c.height - @height) * 0.5 + @height
-          l: (c.width - @width) * 0.5
-          r: (c.width - @width) * 0.5 + @width
-
-        @buttons.push(new PopupButton(this, @rect.l + 10, @rect.t + 10, @rect.l + @width*0.5 - 5, @rect.b - 10))
-        @buttons.push(new PopupButton(this, @rect.l + @width*0.5 + 5, @rect.t + 10, @rect.r - 10, @rect.b - 10))
-        @free = undefined
-        @cell = undefined
-
-  renderPopupBG: (shadow)->
-    c = @app.c
-    g = @app.g
-    g.save()
-
-    g.fillStyle = "#fff"
-    g.strokeStyle = "#000"
-    g.lineWidth = 2
-
-    GameUtils.roundRect(g, @rect.l, @rect.t, @rect.r, @rect.b, @radius)
-
-    g.shadowBlur = 0
-    g.stroke()
-
-    if shadow
-      g.shadowBlur = 5
-      g.shadowColor = "#666"
-      g.shadowOffsetX = 0
-      g.shadowOffsetY = 4
-    else
-      g.shadowBlur = 0
-    g.fill()
-
-    g.restore()
-
-  renderContent: ()->
-    g = @app.g
-    g.save()
-    gradient = g.createLinearGradient(0, @rect.t + 10, 0, @rect.b - 10)
-    gradient.addColorStop(0,"#999")
-    gradient.addColorStop(1,"#666")
-    g.fillStyle = gradient
-    # g.fillStyle = "#999"
-    for button in @buttons
-      button.render(g, {})
-
-    g.restore()
-
-  render: (shadow=true)->
-    g = @app.g
-    g.save()
-    @renderPopupBG(shadow)
-    @renderContent()
-    g.restore()
-
-  onMove: (e)->
-    for button in @buttons
-      button.onMove(e)
-    return
-
-  onClick: (e)->
-    for button in @buttons
-      button.onClick(e)
-    return
-
-window.PopupButton = PopupButton
-window.GamePopup = GamePopup
+window.BasePopup = BasePopup
+window.QueryPopup = QueryPopup
+window.ArrowsPopup = ArrowsPopup

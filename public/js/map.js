@@ -47,6 +47,14 @@
 
     HexaMap.prototype.offset = void 0;
 
+    HexaMap.prototype.state = 0;
+
+    HexaMap.DIRTY = 1;
+
+    HexaMap.COMPLETED = 2;
+
+    HexaMap.NO_WAY = 4;
+
     function HexaMap(app1, map) {
       this.app = app1;
       if (map == null) {
@@ -87,7 +95,7 @@
       return this.connectors = new Array();
     };
 
-    HexaMap.prototype.clearField = function() {
+    HexaMap.prototype.resetMap = function() {
       var cell, j, len, ref;
       ref = this.all;
       for (j = 0, len = ref.length; j < len; j++) {
@@ -97,6 +105,8 @@
       }
       this.connectors = new Array();
       this.applySeeds();
+      this.setDirty(false);
+      this.app.state = this.app.GAME;
       return this.app.render();
     };
 
@@ -110,6 +120,7 @@
       }
       map = this.generateMap(mapSize);
       this.loadMap(map, seedsCount);
+      this.app.state = this.app.GAME;
       return this.app.render();
     };
 
@@ -347,6 +358,50 @@
         }
       }
       return map;
+    };
+
+    HexaMap.prototype.setState = function(state, val) {
+      if (val == null) {
+        val = true;
+      }
+      return this.state = (this.state | state) ^ (val ? 0 : state);
+    };
+
+    HexaMap.prototype.isState = function(state) {
+      return !!(this.state & state);
+    };
+
+    HexaMap.prototype.setDirty = function(val) {
+      if (val == null) {
+        val = true;
+      }
+      return this.state = (this.state | HexaMap.DIRTY) ^ (val ? 0 : HexaMap.DIRTY);
+    };
+
+    HexaMap.prototype.isDirty = function() {
+      return !!(this.state & HexaMap.DIRTY);
+    };
+
+    HexaMap.prototype.setCompleted = function(val) {
+      if (val == null) {
+        val = true;
+      }
+      return this.state = (this.state | HexaMap.COMPLETED) ^ (val ? 0 : HexaMap.COMPLETED);
+    };
+
+    HexaMap.prototype.isCompleted = function() {
+      return !!(this.state & HexaMap.COMPLETED);
+    };
+
+    HexaMap.prototype.setNoWay = function(val) {
+      if (val == null) {
+        val = true;
+      }
+      return this.state = (this.state | HexaMap.NO_WAY) ^ (val ? 0 : HexaMap.NO_WAY);
+    };
+
+    HexaMap.prototype.isNoWay = function() {
+      return !!(this.state & HexaMap.NO_WAY);
     };
 
     return HexaMap;
