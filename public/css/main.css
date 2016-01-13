@@ -7,6 +7,9 @@ html, body, .pane {
   height: 100%;
   display: block; }
 
+.title {
+  text-align: center; }
+
 .content {
   position: relative;
   display: table;
@@ -67,8 +70,7 @@ html, body, .pane {
   color: #000;
   text-align: center;
   text-decoration: none;
+  -webkit-transition: background-color 0.3s ease-in-out;
   transition: background-color 0.3s ease-in-out; }
   .button:hover {
     background-color: #ccc; }
-
-/*# sourceMappingURL=main.css.map */
